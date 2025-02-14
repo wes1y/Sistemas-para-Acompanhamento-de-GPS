@@ -43,7 +43,7 @@ class MainApp(QMainWindow):
         edit_menu.addAction(paste_action)
 
         layout = QVBoxLayout()
-        lbl_welcome = QLabel('Bem-vindo à aplicação principal!')
+        lbl_welcome = QLabel('teste')
         lbl_welcome.setFont(QFont('Arial', 16, QFont.Bold))
         lbl_welcome.setAlignment(Qt.AlignCenter)
         layout.addWidget(lbl_welcome)
@@ -97,6 +97,26 @@ class ForgotPasswordWindow(QWidget):
     def recuperar_senha(self):
         email = self.txt_email.text()
         QMessageBox.information(self, 'Recuperar Senha', f'Instruções de recuperação de senha enviadas para {email}')
+
+class WaitingWindow(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle('Realizando conexão...')
+        self.setFixedSize(420, 220)  # Tamanho fixo da janela
+        self.setup_ui()
+
+    def setup_ui(self):
+        layout = QVBoxLayout()
+        layout.setAlignment(Qt.AlignCenter)
+        layout.setContentsMargins(40, 20, 40, 20)
+        layout.setSpacing(15)
+
+        lbl_message = QLabel('Realizando conexão com banco de dados...')
+        lbl_message.setFont(QFont('Arial', 10))  # Diminuir o tamanho da fonte
+        lbl_message.setAlignment(Qt.AlignCenter)
+        layout.addWidget(lbl_message)
+
+        self.setLayout(layout)
 
 class LoginWindow(QWidget):
     def __init__(self):
@@ -153,9 +173,6 @@ class LoginWindow(QWidget):
         self.cmb_empresa.addItems(['Departamento de Transportes', 'Transportes Guanabara', 'Transflor (ViaSul)', 'Trans.NACIONAL', 'Santa Maria', 'Transportes NSC', 'Caravela Potiguar Transportes'])
         layout.addWidget(lbl_empresa)
         layout.addWidget(self.cmb_empresa)
-
-        # Layout para botões de login e fechar
-        btn_layout = QVBoxLayout()
 
         # Botão de login
         self.btn_login = QPushButton('Entrar')
@@ -239,10 +256,9 @@ class LoginWindow(QWidget):
             return
 
         if usuario == "admin" and senha == "admin":
-            QMessageBox.information(self, 'Sucesso', 'Login realizado com sucesso!')
             self.bloqueios_consecutivos = 0  # Resetar bloqueios consecutivos após login bem-sucedido
             self.salvar_dados()
-            self.transicao_para_main_app()
+            self.mostrar_tela_espera()
         else:
             self.tentativas_restantes -= 1
             
@@ -252,10 +268,17 @@ class LoginWindow(QWidget):
                 QMessageBox.warning(self, 'Erro', 
                     f'Usuário ou senha inválidas! Tentativas restantes: {self.tentativas_restantes}')
 
+    def mostrar_tela_espera(self):
+        self.waiting_window = WaitingWindow()
+        self.waiting_window.show()
+        self.close()
+
+        QTimer.singleShot(2000, self.transicao_para_main_app)  # Espera 2 segundos antes de transitar para a MainApp
+
     def transicao_para_main_app(self):
+        self.waiting_window.close()
         self.main_app = MainApp()
         self.main_app.show()
-        self.close()
 
     def bloquear_sistema(self):
         # Desabilitar campos e botão
