@@ -301,7 +301,6 @@ class LoginWindow(QWidget):
         self.timer.timeout.connect(self.atualizar_contador)
         self.timer.start(1000)  # Atualizar a cada 1 segundo
 
-        # Atualizar contador imediatamente
         self.atualizar_contador()
 
     def atualizar_contador(self):
