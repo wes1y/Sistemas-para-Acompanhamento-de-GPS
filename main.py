@@ -1,8 +1,8 @@
 import sys
 from PyQt5.QtWidgets import (QApplication, QWidget, QLabel, QLineEdit, 
-                             QPushButton, QVBoxLayout, QHBoxLayout, QMessageBox, QCheckBox, QComboBox, QAction)
-from PyQt5.QtGui import QFont, QMovie
-from PyQt5.QtCore import Qt, QTimer, QSettings
+                             QPushButton, QVBoxLayout, QHBoxLayout, QMessageBox, QCheckBox, QComboBox, QAction, QProgressBar)
+from PyQt5.QtGui import QFont, QMovie, QPixmap
+from PyQt5.QtCore import Qt, QTimer, QSettings, QDateTime
 from PyQt5.QtWidgets import QStackedWidget, QMainWindow
 
 class MainApp(QMainWindow):
@@ -255,7 +255,7 @@ class LoginWindow(QWidget):
             QMessageBox.warning(self, 'Erro', 'Os campos Usuário e Senha são obrigatórios!')
             return
 
-        if usuario == "admin" and senha == "admin":
+        if usuario == "wesly" and senha == "admin":
             self.bloqueios_consecutivos = 0  # Resetar bloqueios consecutivos após login bem-sucedido
             self.salvar_dados()
             self.mostrar_tela_espera()
@@ -288,7 +288,7 @@ class LoginWindow(QWidget):
 
         # Aumentar tempo de bloqueio progressivamente
         self.bloqueios_consecutivos += 1
-        self.tempo_bloqueio = 30 * (2 ** (self.bloqueios_consecutivos - 1))  # 30, 60, 120, 240, ...
+        self.tempo_bloqueio = 30 * (2 ** (self.bloqueios_consecutivos - 1))
 
         # Mostrar contador e ícone de carregamento
         self.lbl_contador.show()
