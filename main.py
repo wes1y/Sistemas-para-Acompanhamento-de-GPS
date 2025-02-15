@@ -24,7 +24,7 @@ class EnhancedWaitingWindow(QWidget):
 
         # Logo do sistema
         lbl_logo = QLabel()
-        lbl_logo.setPixmap(QPixmap("gtt_logo.png").scaled(100, 100, Qt.KeepAspectRatio))
+        lbl_logo.setPixmap(QPixmap("logo-grau.png").scaled(100, 100, Qt.KeepAspectRatio))
         lbl_logo.setAlignment(Qt.AlignCenter)
         layout.addWidget(lbl_logo)
 
