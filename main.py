@@ -94,7 +94,6 @@ class MainApp(QMainWindow):
     def setup_status_db(self):
         status_bar = self.statusBar()
         
-        # Informações do banco de dados
         status_bar.addPermanentWidget(QLabel(f" Banco de dados: SQLite  "))
         status_bar.addPermanentWidget(QLabel(f" Servidor: w19.gtt.rn.gov.br  "))
         status_bar.addPermanentWidget(QLabel(f" Última sincronização: {QDateTime.currentDateTime().toString('hh:mm:ss')} "))
@@ -225,7 +224,7 @@ class AtualizacaoWindow(QWidget):
     def iniciar_progresso(self):
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.atualizar_progresso)
-        self.timer.start(30)  # Atualiza a cada 30ms para completar em 3 segundos
+        self.timer.start(15)
 
     def atualizar_progresso(self):
         valor_atual = self.progress_bar.value()
