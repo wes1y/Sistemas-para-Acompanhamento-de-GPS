@@ -22,12 +22,6 @@ class EnhancedWaitingWindow(QWidget):
         layout.setContentsMargins(40, 20, 40, 20)
         layout.setSpacing(15)
 
-        # Logo do sistema
-        lbl_logo = QLabel()
-        lbl_logo.setPixmap(QPixmap("logo-grau.png").scaled(100, 100, Qt.KeepAspectRatio))
-        lbl_logo.setAlignment(Qt.AlignCenter)
-        layout.addWidget(lbl_logo)
-
         # Barra de progresso
         self.progress_bar = QProgressBar()
         self.progress_bar.setRange(0, 100)
@@ -64,15 +58,15 @@ class EnhancedWaitingWindow(QWidget):
             ('Validando credenciais...', 'Perfil: Supervisor'),
             ('Conectando ao servidor principal...', 'Servidor: w19.rn.gov.br:5432'),
             ('Sincronizando dados iniciais...', 'Banco: SQLite | Tabelas: 12'),
-            ('Carregando módulos do sistema...', 'Carregando Módulos'),
-            ('Verificando atualizações...', 'Versão atual: 1.0 | Última versão: 1.0'),
-            ('Inicializando interface...', 'Carregamento completo')
+            ('Carregando módulos do sistema...', 'Alterações de módulos...'),
+            ('Verificando atualizações...', 'Versão atual: 1.0'),
+            ('Sistema atualizado', 'Versão: 1.0'),
         ]
         
         self.etapa_atual = 0
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.atualizar_conexao)
-        self.timer.start(700)
+        self.timer.start(900)
 
     def atualizar_conexao(self):
         if self.etapa_atual < len(self.etapas):
@@ -104,13 +98,8 @@ class MainApp(QMainWindow):
         status_bar.addPermanentWidget(QLabel(f" Banco de dados: SQLite  "))
         status_bar.addPermanentWidget(QLabel(f" Servidor: w19.gtt.rn.gov.br  "))
         status_bar.addPermanentWidget(QLabel(f" Última sincronização: {QDateTime.currentDateTime().toString('hh:mm:ss')} "))
-        status_bar.addPermanentWidget(QLabel(f" Usuário:  "))  # Espaço extra
-        status_bar.addPermanentWidget(QLabel(f" Permissões:  "))
-        
-        # Ícone de status
-        self.lbl_status_db = QLabel()
-        self.lbl_status_db.setPixmap(QPixmap("connected_icon.png").scaled(20, 20))
-        status_bar.addPermanentWidget(self.lbl_status_db)
+        status_bar.addPermanentWidget(QLabel(f" Usuário:  wesly "))  # Espaço extra
+        status_bar.addPermanentWidget(QLabel(f" Permissões:  Supervisor "))
 
     def setup_ui(self):
         menubar = self.menuBar()
@@ -192,6 +181,45 @@ class ForgotPasswordWindow(QWidget):
     def recuperar_senha(self):
         email = self.txt_email.text()
         QMessageBox.information(self, 'Recuperar Senha', f'Instruções enviadas para {email}')
+
+class AtualizacaoWindow(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle('Atualizações em andamento')
+        self.setFixedSize(300, 200)
+        self.setWindowFlags(Qt.FramelessWindowHint)
+        self.setup_ui()
+
+    def setup_ui(self):
+        layout = QVBoxLayout()
+        layout.setAlignment(Qt.AlignCenter)
+        layout.setContentsMargins(40, 20, 40, 20)
+        layout.setSpacing(15)
+
+        lbl_mensagem = QLabel('Atualizações em andamento...')
+        lbl_mensagem.setStyleSheet('font-size: 10px; color: #333333;')
+        lbl_mensagem.setAlignment(Qt.AlignCenter)
+        layout.addWidget(lbl_mensagem)
+
+        self.progress_bar = QProgressBar()
+        self.progress_bar.setRange(0, 100)
+        self.progress_bar.setValue(0)
+        layout.addWidget(self.progress_bar)
+
+        self.setLayout(layout)
+
+    def iniciar_progresso(self):
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self.atualizar_progresso)
+        self.timer.start(30)  # Atualiza a cada 30ms para completar em 3 segundos
+
+    def atualizar_progresso(self):
+        valor_atual = self.progress_bar.value()
+        if valor_atual < 100:
+            self.progress_bar.setValue(valor_atual + 1)
+        else:
+            self.timer.stop()
+            QApplication.instance().quit()
 
 class LoginWindow(QWidget):
     def __init__(self):
@@ -381,7 +409,12 @@ class LoginWindow(QWidget):
         reply = QMessageBox.question(self, 'Confirmação', 'Você realmente deseja fechar o sistema?', 
                                      QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         if reply == QMessageBox.Yes:
-            QApplication.instance().quit()
+            self.mostrar_tela_atualizacao()
+
+    def mostrar_tela_atualizacao(self):
+        self.atualizacao_window = AtualizacaoWindow()
+        self.atualizacao_window.show()
+        self.atualizacao_window.iniciar_progresso()
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
