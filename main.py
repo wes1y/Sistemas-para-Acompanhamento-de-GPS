@@ -61,12 +61,12 @@ class EnhancedWaitingWindow(QWidget):
 
     def simular_conexao(self):
         self.etapas = [
-            ('Validando credenciais...', 'Usuário: wesly | Perfil: Supervisor'),
-            ('Conectando ao servidor principal...', 'Servidor: gtt.rn.gov.br:5432'),
+            ('Validando credenciais...', 'Perfil: Supervisor'),
+            ('Conectando ao servidor principal...', 'Servidor: w19.rn.gov.br:5432'),
             ('Estabelecendo conexão segura...', 'Protocolo: TLS 1.3 | Cifra: AES-256'),
-            ('Sincronizando dados iniciais...', 'Banco: PostgreSQL 14 | Tabelas: 12'),
-            ('Carregando módulos do sistema...', 'Módulos: Frota, Rotas, Manutenção'),
-            ('Verificando atualizações...', 'Versão atual: 2.1.4 | Última versão: 2.1.4'),
+            ('Sincronizando dados iniciais...', 'Banco: SQLite | Tabelas: 12'),
+            ('Carregando módulos do sistema...', 'Módulos: Frota, Rotas, GPS, Relatórios'),
+            ('Verificando atualizações...', 'Versão atual: 1.0 | Última versão: 1.0'),
             ('Inicializando interface...', 'Carregamento completo')
         ]
         
@@ -96,6 +96,22 @@ class MainApp(QMainWindow):
         self.setWindowTitle('GTT/RN v1')
         self.resize(1024, 600)
         self.setup_ui()
+        self.setup_status_db()
+
+    def setup_status_db(self):
+        status_bar = self.statusBar()
+        
+        # Informações do banco de dados
+        status_bar.addPermanentWidget(QLabel(f" Banco de dados: SQLite  "))
+        status_bar.addPermanentWidget(QLabel(f" Servidor: w19.gtt.rn.gov.br  "))
+        status_bar.addPermanentWidget(QLabel(f" Última sincronização: {QDateTime.currentDateTime().toString('hh:mm:ss')} "))
+        status_bar.addPermanentWidget(QLabel(f" Usuário:  "))  # Espaço extra
+        status_bar.addPermanentWidget(QLabel(f" Permissões:  "))
+        
+        # Ícone de status
+        self.lbl_status_db = QLabel()
+        self.lbl_status_db.setPixmap(QPixmap("connected_icon.png").scaled(20, 20))
+        status_bar.addPermanentWidget(self.lbl_status_db)
 
     def setup_ui(self):
         menubar = self.menuBar()
@@ -123,7 +139,7 @@ class MainApp(QMainWindow):
         edit_menu.addAction(paste_action)
 
         layout = QVBoxLayout()
-        lbl_welcome = QLabel('Bem-vindo ao Sistema GTT/RN')
+        lbl_welcome = QLabel('Sistema GTT/RN')
         lbl_welcome.setFont(QFont('Arial', 16, QFont.Bold))
         lbl_welcome.setAlignment(Qt.AlignCenter)
         layout.addWidget(lbl_welcome)
