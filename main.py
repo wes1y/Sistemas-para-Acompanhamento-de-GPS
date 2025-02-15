@@ -63,9 +63,8 @@ class EnhancedWaitingWindow(QWidget):
         self.etapas = [
             ('Validando credenciais...', 'Perfil: Supervisor'),
             ('Conectando ao servidor principal...', 'Servidor: w19.rn.gov.br:5432'),
-            ('Estabelecendo conexão segura...', 'Protocolo: TLS 1.3 | Cifra: AES-256'),
             ('Sincronizando dados iniciais...', 'Banco: SQLite | Tabelas: 12'),
-            ('Carregando módulos do sistema...', 'Módulos: Frota, Rotas, GPS, Relatórios'),
+            ('Carregando módulos do sistema...', 'Carregando Módulos'),
             ('Verificando atualizações...', 'Versão atual: 1.0 | Última versão: 1.0'),
             ('Inicializando interface...', 'Carregamento completo')
         ]
@@ -248,12 +247,14 @@ class LoginWindow(QWidget):
         self.btn_login = QPushButton('Entrar')
         self.btn_login.clicked.connect(self.verificar_login)
         self.btn_login.setFixedHeight(52)
+        self.btn_login.setStyleSheet('background-color: #28a745; color: white; border-radius: 0px;')  # Verde sem bordas arredondadas
         layout.addWidget(self.btn_login)
 
         lower_btn_layout = QHBoxLayout()
         self.btn_fechar = QPushButton('Fechar')
         self.btn_fechar.clicked.connect(self.fechar_sistema)
         self.btn_fechar.setFixedHeight(40)
+        self.btn_fechar.setStyleSheet('background-color: #dc3545; color: white; border-radius: 0px;')  # Vermelho sem bordas arredondadas
         lower_btn_layout.addWidget(self.btn_fechar)
 
         self.btn_esqueceu_senha = QPushButton('Esqueceu sua senha?')
@@ -289,9 +290,7 @@ class LoginWindow(QWidget):
                 border-radius: 4px; font-size: 14px;
             }
             QPushButton {
-                background-color: #007BFF; color: white;
-                border: none; border-radius: 4px;
-                padding: 8px; font-size: 14px;
+                border: none; padding: 8px; font-size: 14px;
             }
             QPushButton:hover { background-color: #0069D9; }
             QPushButton:disabled { background-color: #CCCCCC; }
@@ -323,7 +322,7 @@ class LoginWindow(QWidget):
         self.waiting_window = EnhancedWaitingWindow()
         self.waiting_window.connection_finished.connect(self.transicao_para_main_app)
         self.waiting_window.show()
-        self.close()
+        self.hide()
 
     def transicao_para_main_app(self):
         if hasattr(self, 'waiting_window'):
@@ -331,6 +330,7 @@ class LoginWindow(QWidget):
             
         self.main_app = MainApp()
         self.main_app.show()
+        self.close()
 
     def bloquear_sistema(self):
         self.txt_usuario.setEnabled(False)
@@ -378,7 +378,10 @@ class LoginWindow(QWidget):
         self.forgot_password_window.show()
 
     def fechar_sistema(self):
-        QApplication.instance().quit()
+        reply = QMessageBox.question(self, 'Confirmação', 'Você realmente deseja fechar o sistema?', 
+                                     QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        if reply == QMessageBox.Yes:
+            QApplication.instance().quit()
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
