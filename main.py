@@ -3,9 +3,10 @@ from PyQt5.QtWidgets import (QApplication, QWidget, QLabel, QLineEdit, QPushButt
                             QVBoxLayout, QHBoxLayout, QMessageBox, QCheckBox, QComboBox, 
                             QAction, QProgressBar, QMainWindow, QTableWidget, QTableWidgetItem, 
                             QDialog, QFormLayout, QDialogButtonBox)
-from PyQt5.QtGui import QFont, QMovie, QPixmap
+from PyQt5.QtGui import QFont, QMovie, QPixmap, QIcon
 from PyQt5.QtCore import Qt, QTimer, QSettings, QDateTime, pyqtSignal
-
+from PyQt5.QtGui import QColor, QBrush
+from PyQt5.QtWidgets import QGridLayout, QGroupBox, QHeaderView
 
 class EnhancedWaitingWindow(QWidget):
     connection_finished = pyqtSignal()
@@ -115,12 +116,42 @@ class VehicleDialog(QDialog):
 class MainApp(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle('GTT/RN v1')
-        self.resize(1024, 600)
+        self.setWindowTitle('GTT/RN v1.1.0 - Painel de Controle')
+        self.resize(1280, 720)
         self.veiculos = []
         self.setup_ui()
         self.setup_status_db()
         self.add_example_vehicles()
+        self.setStyleSheet("""
+            QMainWindow { background-color: #F0F4F8; }
+            QGroupBox {
+                background-color: white;
+                border: 1px solid #CBD2D9;
+                border-radius: 8px;
+                margin-top: 10px;
+            }
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                left: 10px;
+                padding: 0 3px;
+                color: #2D3748;
+                font-weight: bold;
+            }
+            QTableWidget {
+                background-color: white;
+                border: 1px solid #CBD2D9;
+                border-radius: 6px;
+            }
+            QPushButton {
+                background-color: #4299E1;
+                color: white;
+                border: none;
+                padding: 8px 16px;
+                border-radius: 4px;
+                font-weight: 500;
+            }
+            QPushButton:hover { background-color: #3182CE; }
+        """)
 
     def setup_status_db(self):
         status_bar = self.statusBar()
@@ -132,46 +163,103 @@ class MainApp(QMainWindow):
 
     def setup_ui(self):
         menubar = self.menuBar()
+        menubar.setStyleSheet("""
+            QMenuBar {
+                background-color: #2D3748;
+                color: white;
+                padding: 4px;
+            }
+            QMenuBar::item:selected { background-color: #4A5568; }
+        """)
         
-        # Menu Gerenciamento
-        file_menu = menubar.addMenu('Gerenciamento')
-        new_action = QAction('Novo', self)
-        new_action.setShortcut('Ctrl+N')
-        new_action.triggered.connect(self.novo_arquivo)
-        file_menu.addAction(new_action)
-
-        # Menu Cadastros
-        cadastro_menu = menubar.addMenu('Cadastros')
-        veiculo_action = QAction('Veículos', self)
-        veiculo_action.triggered.connect(self.show_vehicle_registration)
-        cadastro_menu.addAction(veiculo_action)
-
+        # Menu principal
+        self.create_menus(menubar)
+        
         # Layout principal
         central_widget = QWidget()
-        layout = QVBoxLayout()
+        main_layout = QGridLayout()
+        central_widget.setLayout(main_layout)
+        self.setCentralWidget(central_widget)
+
+        # Painel esquerdo (cards de status)
+        left_panel = QVBoxLayout()
+        left_panel.addWidget(self.create_status_card('Veículos Ativos', '45', '#48BB78'))
+        left_panel.addWidget(self.create_status_card('Em Manutenção', '7', '#F56565'))
+        left_panel.addWidget(self.create_status_card('Alertas Recentes', '3', '#ECC94B'))
+        main_layout.addLayout(left_panel, 0, 0, 1, 1)
+
+        # Área principal (tabela e controles)
+        right_panel = QVBoxLayout()
         
-        # Tabela de veículos
+        # Barra de ferramentas
+        toolbar = QHBoxLayout()
+        self.btn_atualizar = QPushButton('Atualizar Dados')
+        self.btn_exportar = QPushButton('Exportar Relatório')
+        self.btn_filtrar = QPushButton('Filtrar')
+        toolbar.addWidget(self.btn_atualizar)
+        toolbar.addWidget(self.btn_exportar)
+        toolbar.addWidget(self.btn_filtrar)
+        right_panel.addLayout(toolbar)
+
+        # Tabela aprimorada
         self.table_veiculos = QTableWidget()
         self.table_veiculos.setColumnCount(5)
         self.table_veiculos.setHorizontalHeaderLabels(['ID', 'Placa', 'Modelo', 'Tipo', 'Status'])
-        self.table_veiculos.setColumnWidth(0, 50)
-        self.table_veiculos.setColumnWidth(1, 100)
-        self.table_veiculos.setColumnWidth(4, 100)
+        self.table_veiculos.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.table_veiculos.setSortingEnabled(True)
+        self.table_veiculos.setAlternatingRowColors(True)
+        right_panel.addWidget(self.table_veiculos)
+
+        main_layout.addLayout(right_panel, 0, 1, 2, 1)
+
+        # Painel inferior (gráficos/resumo)
+        bottom_panel = QHBoxLayout()
+        bottom_panel.addWidget(self.create_chart_group('Distribuição por Tipo', 300))
+        bottom_panel.addWidget(self.create_chart_group('Status de Operação', 300))
+        main_layout.addLayout(bottom_panel, 1, 0, 1, 1)
+
+    def create_menus(self, menubar):
+        # Menu Cadastros
+        cadastro_menu = menubar.addMenu('Cadastros')
+        veiculo_action = QAction(QIcon('icons/vehicle.png'), 'Veículos', self)
+        veiculo_action.triggered.connect(self.show_vehicle_registration)
+        cadastro_menu.addAction(veiculo_action)
+
+        # Menu Relatórios
+        relatorio_menu = menubar.addMenu('Relatórios')
+        relatorio_action = QAction(QIcon('icons/report.png'), 'Gerar Relatório', self)
+        relatorio_menu.addAction(relatorio_action)
+
+    def create_status_card(self, title, value, color):
+        group = QGroupBox(title)
+        layout = QVBoxLayout()
         
-        # Botão de novo veículo
-        btn_novo = QPushButton('Novo Veículo')
-        btn_novo.setStyleSheet('background-color: #4CAF50; color: white;')
-        btn_novo.clicked.connect(self.show_vehicle_registration)
+        lbl_value = QLabel(value)
+        lbl_value.setAlignment(Qt.AlignCenter)
+        lbl_value.setStyleSheet(f"""
+            font-size: 32px;
+            font-weight: bold;
+            color: {color};
+            padding: 20px;
+        """)
+        
+        layout.addWidget(lbl_value)
+        group.setLayout(layout)
+        return group
 
-        layout.addWidget(QLabel('Frota de Veículos Cadastrados:', self))
-        layout.addWidget(self.table_veiculos)
-        layout.addWidget(btn_novo)
-
-        central_widget.setLayout(layout)
-        self.setCentralWidget(central_widget)
-
-    def novo_arquivo(self):
-        QMessageBox.information(self, 'Novo Arquivo', 'Ação Novo Arquivo selecionada.')
+    def create_chart_group(self, title, width):
+        group = QGroupBox(title)
+        group.setFixedWidth(width)
+        layout = QVBoxLayout()
+        
+        # Placeholder para gráfico
+        lbl_chart = QLabel("Gráfico será implementado aqui")
+        lbl_chart.setAlignment(Qt.AlignCenter)
+        lbl_chart.setStyleSheet("color: #718096; font-style: italic;")
+        layout.addWidget(lbl_chart)
+        
+        group.setLayout(layout)
+        return group
 
     def add_example_vehicles(self):
         self.veiculos = [
