@@ -1,26 +1,107 @@
 import sys
-from PyQt5.QtWidgets import (QApplication, QWidget, QLabel, QLineEdit, 
-                             QPushButton, QVBoxLayout, QHBoxLayout, QMessageBox, QCheckBox, QComboBox, QAction, QProgressBar)
+from PyQt5.QtWidgets import (QApplication, QWidget, QLabel, QLineEdit, QPushButton, 
+                            QVBoxLayout, QHBoxLayout, QMessageBox, QCheckBox, QComboBox, 
+                            QAction, QProgressBar, QMainWindow)
 from PyQt5.QtGui import QFont, QMovie, QPixmap
-from PyQt5.QtCore import Qt, QTimer, QSettings, QDateTime
-from PyQt5.QtWidgets import QStackedWidget, QMainWindow
+from PyQt5.QtCore import Qt, QTimer, QSettings, QDateTime, pyqtSignal
+
+class EnhancedWaitingWindow(QWidget):
+    connection_finished = pyqtSignal()
+
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle('Conectando ao Sistema GTT/RN')
+        self.setFixedSize(500, 300)
+        self.setWindowFlags(Qt.FramelessWindowHint)
+        self.setup_ui()
+        self.simular_conexao()
+
+    def setup_ui(self):
+        layout = QVBoxLayout()
+        layout.setAlignment(Qt.AlignCenter)
+        layout.setContentsMargins(40, 20, 40, 20)
+        layout.setSpacing(15)
+
+        # Logo do sistema
+        lbl_logo = QLabel()
+        lbl_logo.setPixmap(QPixmap("gtt_logo.png").scaled(100, 100, Qt.KeepAspectRatio))
+        lbl_logo.setAlignment(Qt.AlignCenter)
+        layout.addWidget(lbl_logo)
+
+        # Barra de progresso
+        self.progress_bar = QProgressBar()
+        self.progress_bar.setRange(0, 100)
+        self.progress_bar.setValue(0)
+        self.progress_bar.setStyleSheet("""
+            QProgressBar {
+                border: 2px solid #007BFF;
+                border-radius: 10px;
+                height: 20px;
+            }
+            QProgressBar::chunk {
+                background-color: #007BFF;
+                border-radius: 8px;
+            }
+        """)
+        layout.addWidget(self.progress_bar)
+
+        # Etapas de conexão
+        self.lbl_etapa = QLabel('Iniciando processo de conexão...')
+        self.lbl_etapa.setAlignment(Qt.AlignCenter)
+        self.lbl_etapa.setStyleSheet('font-size: 14px; color: #333333;')
+        layout.addWidget(self.lbl_etapa)
+
+        # Detalhes técnicos
+        self.lbl_detalhes = QLabel()
+        self.lbl_detalhes.setAlignment(Qt.AlignCenter)
+        self.lbl_detalhes.setStyleSheet('font-size: 12px; color: #666666;')
+        layout.addWidget(self.lbl_detalhes)
+
+        self.setLayout(layout)
+
+    def simular_conexao(self):
+        self.etapas = [
+            ('Validando credenciais...', 'Usuário: wesly | Perfil: Supervisor'),
+            ('Conectando ao servidor principal...', 'Servidor: gtt.rn.gov.br:5432'),
+            ('Estabelecendo conexão segura...', 'Protocolo: TLS 1.3 | Cifra: AES-256'),
+            ('Sincronizando dados iniciais...', 'Banco: PostgreSQL 14 | Tabelas: 12'),
+            ('Carregando módulos do sistema...', 'Módulos: Frota, Rotas, Manutenção'),
+            ('Verificando atualizações...', 'Versão atual: 2.1.4 | Última versão: 2.1.4'),
+            ('Inicializando interface...', 'Carregamento completo')
+        ]
+        
+        self.etapa_atual = 0
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self.atualizar_conexao)
+        self.timer.start(700)
+
+    def atualizar_conexao(self):
+        if self.etapa_atual < len(self.etapas):
+            etapa, detalhes = self.etapas[self.etapa_atual]
+            progresso = int((self.etapa_atual + 1) * (100 / len(self.etapas)))
+            
+            self.lbl_etapa.setText(etapa)
+            self.lbl_detalhes.setText(detalhes)
+            self.progress_bar.setValue(progresso)
+            
+            self.etapa_atual += 1
+        else:
+            self.timer.stop()
+            self.connection_finished.emit()
+            self.close()
 
 class MainApp(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle('GTT/RN v1')
-        self.resize(1024, 600)  # Define um tamanho inicial, mas permite redimensionamento
+        self.resize(1024, 600)
         self.setup_ui()
 
     def setup_ui(self):
-        # Criação da barra de menu
         menubar = self.menuBar()
-
-        # Adicionando menus
         file_menu = menubar.addMenu('Gerenciamento')
         edit_menu = menubar.addMenu('Editar')
 
-        # Adicionando ações ao menu Gerenciamento
         new_action = QAction('Novo', self)
         new_action.setShortcut('Ctrl+N')
         new_action.triggered.connect(self.novo_arquivo)
@@ -31,7 +112,6 @@ class MainApp(QMainWindow):
         open_action.triggered.connect(self.abrir_arquivo)
         file_menu.addAction(open_action)
 
-        # Adicionando ações ao menu Editar
         copy_action = QAction('Copiar', self)
         copy_action.setShortcut('Ctrl+C')
         copy_action.triggered.connect(self.copiar_texto)
@@ -43,7 +123,7 @@ class MainApp(QMainWindow):
         edit_menu.addAction(paste_action)
 
         layout = QVBoxLayout()
-        lbl_welcome = QLabel('teste')
+        lbl_welcome = QLabel('Bem-vindo ao Sistema GTT/RN')
         lbl_welcome.setFont(QFont('Arial', 16, QFont.Bold))
         lbl_welcome.setAlignment(Qt.AlignCenter)
         layout.addWidget(lbl_welcome)
@@ -96,62 +176,38 @@ class ForgotPasswordWindow(QWidget):
 
     def recuperar_senha(self):
         email = self.txt_email.text()
-        QMessageBox.information(self, 'Recuperar Senha', f'Instruções de recuperação de senha enviadas para {email}')
-
-class WaitingWindow(QWidget):
-    def __init__(self):
-        super().__init__()
-        self.setWindowTitle('Realizando conexão...')
-        self.setFixedSize(420, 220)  # Tamanho fixo da janela
-        self.setup_ui()
-
-    def setup_ui(self):
-        layout = QVBoxLayout()
-        layout.setAlignment(Qt.AlignCenter)
-        layout.setContentsMargins(40, 20, 40, 20)
-        layout.setSpacing(15)
-
-        lbl_message = QLabel('Realizando conexão com banco de dados...')
-        lbl_message.setFont(QFont('Arial', 10))  # Diminuir o tamanho da fonte
-        lbl_message.setAlignment(Qt.AlignCenter)
-        layout.addWidget(lbl_message)
-
-        self.setLayout(layout)
+        QMessageBox.information(self, 'Recuperar Senha', f'Instruções enviadas para {email}')
 
 class LoginWindow(QWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle('Login')
-        self.setFixedSize(420, 660)  # Tamanho fixo da janela
-        self.setWindowFlags(Qt.FramelessWindowHint)  # Remove os botões padrão do Windows
+        self.setFixedSize(420, 660)
+        self.setWindowFlags(Qt.FramelessWindowHint)
         self.tentativas_restantes = 3
-        self.tempo_bloqueio = 30  # Tempo inicial de bloqueio em segundos
-        self.bloqueios_consecutivos = 0  # Contador de bloqueios consecutivos
+        self.tempo_bloqueio = 30
+        self.bloqueios_consecutivos = 0
         self.settings = QSettings('MinhaEmpresa', 'MeuApp')
         self.setup_ui()
         self.carregar_dados()
 
     def setup_ui(self):
-        # Layout principal
         layout = QVBoxLayout()
         layout.setAlignment(Qt.AlignCenter)
         layout.setContentsMargins(40, 20, 40, 20)
         layout.setSpacing(15)
 
-        # Título
         lbl_titulo = QLabel('GTT/RN - Gestão de Transportes e Tráfego')
         lbl_titulo.setFont(QFont('Arial', 16, QFont.Bold))
         lbl_titulo.setAlignment(Qt.AlignCenter)
         layout.addWidget(lbl_titulo)
 
-        # Campo de usuário
         lbl_usuario = QLabel('Usuário:')
         self.txt_usuario = QLineEdit()
         self.txt_usuario.setPlaceholderText('Digite seu usuário')
         layout.addWidget(lbl_usuario)
         layout.addWidget(self.txt_usuario)
 
-        # Campo de senha
         lbl_senha = QLabel('Senha:')
         self.txt_senha = QLineEdit()
         self.txt_senha.setPlaceholderText('Digite sua senha')
@@ -159,58 +215,50 @@ class LoginWindow(QWidget):
         layout.addWidget(lbl_senha)
         layout.addWidget(self.txt_senha)
 
-        # Checkbox lembrar usuário
         self.chk_lembrar_usuario = QCheckBox('Lembrar Usuário')
         layout.addWidget(self.chk_lembrar_usuario)
 
-        # Checkbox lembrar senha
         self.chk_lembrar_senha = QCheckBox('Lembrar Senha')
         layout.addWidget(self.chk_lembrar_senha)
 
-        # ComboBox selecionar empresa
         lbl_empresa = QLabel('Selecione a Empresa:')
         self.cmb_empresa = QComboBox()
-        self.cmb_empresa.addItems(['Departamento de Transportes', 'Transportes Guanabara', 'Transflor (ViaSul)', 'Trans.NACIONAL', 'Santa Maria', 'Transportes NSC', 'Caravela Potiguar Transportes'])
+        self.cmb_empresa.addItems(['Departamento de Transportes', 'Transportes Guanabara', 
+                                  'Transflor (ViaSul)', 'Trans.NACIONAL', 'Santa Maria', 
+                                  'Transportes NSC', 'Caravela Potiguar Transportes'])
         layout.addWidget(lbl_empresa)
         layout.addWidget(self.cmb_empresa)
 
-        # Botão de login
         self.btn_login = QPushButton('Entrar')
         self.btn_login.clicked.connect(self.verificar_login)
-        self.btn_login.setFixedHeight(52)  # Altura de um botão e meio
+        self.btn_login.setFixedHeight(52)
         layout.addWidget(self.btn_login)
 
-        # Layout para botões de fechar e esqueceu senha
         lower_btn_layout = QHBoxLayout()
-
-        # Botão de fechar
         self.btn_fechar = QPushButton('Fechar')
         self.btn_fechar.clicked.connect(self.fechar_sistema)
-        self.btn_fechar.setFixedHeight(40)  # Metade da altura do botão de login
+        self.btn_fechar.setFixedHeight(40)
         lower_btn_layout.addWidget(self.btn_fechar)
 
-        # Botão de esqueceu sua senha
         self.btn_esqueceu_senha = QPushButton('Esqueceu sua senha?')
         self.btn_esqueceu_senha.setStyleSheet('background: none; border: none; color: blue; text-decoration: underline;')
         self.btn_esqueceu_senha.clicked.connect(self.abrir_tela_recuperar_senha)
-        self.btn_esqueceu_senha.setFixedHeight(40)  # Metade da altura do botão de login
+        self.btn_esqueceu_senha.setFixedHeight(40)
         lower_btn_layout.addWidget(self.btn_esqueceu_senha)
 
         layout.addLayout(lower_btn_layout)
 
-        # Label para contador de bloqueio
         self.lbl_contador = QLabel()
         self.lbl_contador.setAlignment(Qt.AlignCenter)
         self.lbl_contador.setStyleSheet('color: red; font-weight: bold;')
-        self.lbl_contador.hide()  # Esconde o contador inicialmente
+        self.lbl_contador.hide()
         layout.addWidget(self.lbl_contador)
 
-        # Ícone de carregamento
         self.loading_label = QLabel(self)
-        self.loading_movie = QMovie("loading.gif")  # Substitua pelo caminho do seu GIF
+        self.loading_movie = QMovie("loading.gif")
         self.loading_label.setMovie(self.loading_movie)
         self.loading_label.setAlignment(Qt.AlignCenter)
-        self.loading_label.hide()  # Esconde o ícone inicialmente
+        self.loading_label.hide()
         layout.addWidget(self.loading_label)
 
         self.setLayout(layout)
@@ -218,33 +266,19 @@ class LoginWindow(QWidget):
 
     def apply_styles(self):
         self.setStyleSheet("""
-            QWidget {
-                background-color: #F5F5F5;
-            }
-            QLabel {
-                color: #333333;
-                font-size: 12px;
-            }
+            QWidget { background-color: #F5F5F5; }
+            QLabel { color: #333333; font-size: 12px; }
             QLineEdit {
-                padding: 8px;
-                border: 1px solid #CCCCCC;
-                border-radius: 4px;
-                font-size: 14px;
+                padding: 8px; border: 1px solid #CCCCCC;
+                border-radius: 4px; font-size: 14px;
             }
             QPushButton {
-                background-color: #007BFF;
-                color: white;
-                border: none;
-                border-radius: 4px;
-                padding: 8px;
-                font-size: 14px;
+                background-color: #007BFF; color: white;
+                border: none; border-radius: 4px;
+                padding: 8px; font-size: 14px;
             }
-            QPushButton:hover {
-                background-color: #0069D9;
-            }
-            QPushButton:disabled {
-                background-color: #CCCCCC;
-            }
+            QPushButton:hover { background-color: #0069D9; }
+            QPushButton:disabled { background-color: #CCCCCC; }
         """)
 
     def verificar_login(self):
@@ -252,63 +286,58 @@ class LoginWindow(QWidget):
         senha = self.txt_senha.text()
 
         if not usuario or not senha:
-            QMessageBox.warning(self, 'Erro', 'Os campos Usuário e Senha são obrigatórios!')
+            QMessageBox.warning(self, 'Erro', 'Campos obrigatórios!')
             return
 
         if usuario == "wesly" and senha == "admin":
-            self.bloqueios_consecutivos = 0  # Resetar bloqueios consecutivos após login bem-sucedido
+            self.bloqueios_consecutivos = 0
             self.salvar_dados()
             self.mostrar_tela_espera()
         else:
             self.tentativas_restantes -= 1
-            
-            if self.tentativas_restantes <= 0:  # Bloquear após 3 tentativas
+            if self.tentativas_restantes <= 0:
                 self.bloquear_sistema()
             else:
-                QMessageBox.warning(self, 'Erro', 
-                    f'Usuário ou senha inválidas! Tentativas restantes: {self.tentativas_restantes}')
+                QMessageBox.warning(self, 'Erro', f'Tentativas restantes: {self.tentativas_restantes}')
 
     def mostrar_tela_espera(self):
-        self.waiting_window = WaitingWindow()
+        if hasattr(self, 'waiting_window'):
+            self.waiting_window.close()
+            
+        self.waiting_window = EnhancedWaitingWindow()
+        self.waiting_window.connection_finished.connect(self.transicao_para_main_app)
         self.waiting_window.show()
         self.close()
 
-        QTimer.singleShot(2000, self.transicao_para_main_app)  # Espera 2 segundos antes de transitar para a MainApp
-
     def transicao_para_main_app(self):
-        self.waiting_window.close()
+        if hasattr(self, 'waiting_window'):
+            self.waiting_window.close()
+            
         self.main_app = MainApp()
         self.main_app.show()
 
     def bloquear_sistema(self):
-        # Desabilitar campos e botão
         self.txt_usuario.setEnabled(False)
         self.txt_senha.setEnabled(False)
         self.btn_login.setEnabled(False)
-
-        # Aumentar tempo de bloqueio progressivamente
         self.bloqueios_consecutivos += 1
         self.tempo_bloqueio = 30 * (2 ** (self.bloqueios_consecutivos - 1))
 
-        # Mostrar contador e ícone de carregamento
         self.lbl_contador.show()
         self.loading_label.show()
         self.loading_movie.start()
 
-        # Iniciar temporizador
         self.tempo_restante = self.tempo_bloqueio
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.atualizar_contador)
-        self.timer.start(1000)  # Atualizar a cada 1 segundo
-
+        self.timer.start(1000)
         self.atualizar_contador()
 
     def atualizar_contador(self):
         if self.tempo_restante > 0:
-            self.lbl_contador.setText(f"Tente novamente em {self.tempo_restante} segundos...")
+            self.lbl_contador.setText(f"Tente novamente em {self.tempo_restante}s...")
             self.tempo_restante -= 1
         else:
-            # Reativar sistema
             self.timer.stop()
             self.txt_usuario.setEnabled(True)
             self.txt_senha.setEnabled(True)
@@ -316,28 +345,17 @@ class LoginWindow(QWidget):
             self.lbl_contador.hide()
             self.loading_label.hide()
             self.loading_movie.stop()
-            self.tentativas_restantes = 3  # Resetar tentativas
+            self.tentativas_restantes = 3
 
     def salvar_dados(self):
-        if self.chk_lembrar_usuario.isChecked():
-            self.settings.setValue('usuario', self.txt_usuario.text())
-        else:
-            self.settings.remove('usuario')
-
-        if self.chk_lembrar_senha.isChecked():
-            self.settings.setValue('senha', self.txt_senha.text())
-        else:
-            self.settings.remove('senha')
+        self.settings.setValue('usuario', self.txt_usuario.text() if self.chk_lembrar_usuario.isChecked() else '')
+        self.settings.setValue('senha', self.txt_senha.text() if self.chk_lembrar_senha.isChecked() else '')
 
     def carregar_dados(self):
-        usuario = self.settings.value('usuario', '')
-        senha = self.settings.value('senha', '')
-
-        self.txt_usuario.setText(usuario)
-        self.txt_senha.setText(senha)
-
-        self.chk_lembrar_usuario.setChecked(bool(usuario))
-        self.chk_lembrar_senha.setChecked(bool(senha))
+        self.txt_usuario.setText(self.settings.value('usuario', ''))
+        self.txt_senha.setText(self.settings.value('senha', ''))
+        self.chk_lembrar_usuario.setChecked(bool(self.settings.value('usuario')))
+        self.chk_lembrar_senha.setChecked(bool(self.settings.value('senha')))
 
     def abrir_tela_recuperar_senha(self):
         self.forgot_password_window = ForgotPasswordWindow()
