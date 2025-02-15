@@ -57,10 +57,10 @@ class EnhancedWaitingWindow(QWidget):
         self.etapas = [
             ('Validando credenciais...', 'Perfil: Supervisor'),
             ('Conectando ao servidor principal...', 'Servidor: w19.rn.gov.br:5432'),
-            ('Sincronizando dados iniciais...', 'Banco: SQLite | Tabelas: 12'),
+            ('Sincronizando dados...', 'Banco: SQLite | Tabelas: 12'),
             ('Carregando módulos do sistema...', 'Alterações de módulos...'),
             ('Verificando atualizações...', 'Versão atual: 1.0'),
-            ('Sistema atualizado', 'Versão: 1.0'),
+            ('Sistema atualizado!', 'Versão: 1.0'),
         ]
         
         self.etapa_atual = 0
@@ -148,6 +148,20 @@ class MainApp(QMainWindow):
     def colar_texto(self):
         QMessageBox.information(self, 'Colar', 'Ação Colar selecionada.')
 
+    def closeEvent(self, event):
+        reply = QMessageBox.question(self, 'Confirmação', 'Você realmente deseja fechar o sistema?', 
+                                     QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        if reply == QMessageBox.Yes:
+            self.mostrar_tela_atualizacao()
+            event.ignore()
+        else:
+            event.ignore()
+
+    def mostrar_tela_atualizacao(self):
+        self.atualizacao_window = AtualizacaoWindow()
+        self.atualizacao_window.show()
+        self.atualizacao_window.iniciar_progresso()
+
 class ForgotPasswordWindow(QWidget):
     def __init__(self):
         super().__init__()
@@ -196,7 +210,7 @@ class AtualizacaoWindow(QWidget):
         layout.setContentsMargins(40, 20, 40, 20)
         layout.setSpacing(15)
 
-        lbl_mensagem = QLabel('Atualizações em andamento...')
+        lbl_mensagem = QLabel('Aguarde enquanto o sistema é atualizado!')
         lbl_mensagem.setStyleSheet('font-size: 10px; color: #333333;')
         lbl_mensagem.setAlignment(Qt.AlignCenter)
         layout.addWidget(lbl_mensagem)
@@ -225,7 +239,7 @@ class LoginWindow(QWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle('Login')
-        self.setFixedSize(420, 660)
+        self.setFixedSize(420, 520)
         self.setWindowFlags(Qt.FramelessWindowHint)
         self.tentativas_restantes = 3
         self.tempo_bloqueio = 30
@@ -263,14 +277,6 @@ class LoginWindow(QWidget):
 
         self.chk_lembrar_senha = QCheckBox('Lembrar Senha')
         layout.addWidget(self.chk_lembrar_senha)
-
-        lbl_empresa = QLabel('Selecione a Empresa:')
-        self.cmb_empresa = QComboBox()
-        self.cmb_empresa.addItems(['Departamento de Transportes', 'Transportes Guanabara', 
-                                  'Transflor (ViaSul)', 'Trans.NACIONAL', 'Santa Maria', 
-                                  'Transportes NSC', 'Caravela Potiguar Transportes'])
-        layout.addWidget(lbl_empresa)
-        layout.addWidget(self.cmb_empresa)
 
         self.btn_login = QPushButton('Entrar')
         self.btn_login.clicked.connect(self.verificar_login)
