@@ -1,7 +1,7 @@
 import sys
 from PyQt5.QtWidgets import (QApplication, QWidget, QLabel, QLineEdit, QPushButton, 
                             QVBoxLayout, QHBoxLayout, QMessageBox, QCheckBox, QComboBox, 
-                            QAction, QProgressBar, QMainWindow)
+                            QAction, QProgressBar, QMainWindow, QTableWidget, QTableWidgetItem)
 from PyQt5.QtGui import QFont, QMovie, QPixmap
 from PyQt5.QtCore import Qt, QTimer, QSettings, QDateTime, pyqtSignal
 
