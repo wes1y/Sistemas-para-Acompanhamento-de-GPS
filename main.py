@@ -1,9 +1,11 @@
 import sys
 from PyQt5.QtWidgets import (QApplication, QWidget, QLabel, QLineEdit, QPushButton, 
                             QVBoxLayout, QHBoxLayout, QMessageBox, QCheckBox, QComboBox, 
-                            QAction, QProgressBar, QMainWindow, QTableWidget, QTableWidgetItem)
+                            QAction, QProgressBar, QMainWindow, QTableWidget, QTableWidgetItem, 
+                            QDialog, QFormLayout, QDialogButtonBox)
 from PyQt5.QtGui import QFont, QMovie, QPixmap
 from PyQt5.QtCore import Qt, QTimer, QSettings, QDateTime, pyqtSignal
+
 
 class EnhancedWaitingWindow(QWidget):
     connection_finished = pyqtSignal()
@@ -83,83 +85,124 @@ class EnhancedWaitingWindow(QWidget):
             self.connection_finished.emit()
             self.close()
 
+class VehicleDialog(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle('Cadastrar Novo Veículo')
+        self.setFixedSize(400, 300)
+        
+        layout = QFormLayout()
+        
+        self.txt_placa = QLineEdit()
+        self.txt_placa.setPlaceholderText('Ex: ABC1D23')
+        layout.addRow('Placa:', self.txt_placa)
+        
+        self.txt_modelo = QLineEdit()
+        self.txt_modelo.setPlaceholderText('Ex: Ford Ranger 2023')
+        layout.addRow('Modelo:', self.txt_modelo)
+        
+        self.cb_tipo = QComboBox()
+        self.cb_tipo.addItems(['Ônibus'])
+        layout.addRow('Tipo:', self.cb_tipo)
+        
+        buttons = QDialogButtonBox(QDialogButtonBox.Save | QDialogButtonBox.Cancel)
+        buttons.accepted.connect(self.accept)
+        buttons.rejected.connect(self.reject)
+        layout.addRow(buttons)
+        
+        self.setLayout(layout)
+
 class MainApp(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle('GTT/RN v1')
         self.resize(1024, 600)
+        self.veiculos = []
         self.setup_ui()
         self.setup_status_db()
+        self.add_example_vehicles()
 
     def setup_status_db(self):
         status_bar = self.statusBar()
-        
         status_bar.addPermanentWidget(QLabel(f" Banco de dados: SQLite  "))
         status_bar.addPermanentWidget(QLabel(f" Servidor: w19.gtt.rn.gov.br  "))
         status_bar.addPermanentWidget(QLabel(f" Última sincronização: {QDateTime.currentDateTime().toString('hh:mm:ss')} "))
-        status_bar.addPermanentWidget(QLabel(f" Usuário:  wesly "))  # Espaço extra
+        status_bar.addPermanentWidget(QLabel(f" Usuário:  wesly "))
         status_bar.addPermanentWidget(QLabel(f" Permissões:  Supervisor "))
 
     def setup_ui(self):
         menubar = self.menuBar()
+        
+        # Menu Gerenciamento
         file_menu = menubar.addMenu('Gerenciamento')
-        edit_menu = menubar.addMenu('Editar')
-
         new_action = QAction('Novo', self)
         new_action.setShortcut('Ctrl+N')
         new_action.triggered.connect(self.novo_arquivo)
         file_menu.addAction(new_action)
 
-        open_action = QAction('Abrir', self)
-        open_action.setShortcut('Ctrl+O')
-        open_action.triggered.connect(self.abrir_arquivo)
-        file_menu.addAction(open_action)
+        # Menu Cadastros
+        cadastro_menu = menubar.addMenu('Cadastros')
+        veiculo_action = QAction('Veículos', self)
+        veiculo_action.triggered.connect(self.show_vehicle_registration)
+        cadastro_menu.addAction(veiculo_action)
 
-        copy_action = QAction('Copiar', self)
-        copy_action.setShortcut('Ctrl+C')
-        copy_action.triggered.connect(self.copiar_texto)
-        edit_menu.addAction(copy_action)
-
-        paste_action = QAction('Colar', self)
-        paste_action.setShortcut('Ctrl+V')
-        paste_action.triggered.connect(self.colar_texto)
-        edit_menu.addAction(paste_action)
-
-        layout = QVBoxLayout()
-        lbl_welcome = QLabel('Sistema GTT/RN')
-        lbl_welcome.setFont(QFont('Arial', 16, QFont.Bold))
-        lbl_welcome.setAlignment(Qt.AlignCenter)
-        layout.addWidget(lbl_welcome)
-
+        # Layout principal
         central_widget = QWidget()
+        layout = QVBoxLayout()
+        
+        # Tabela de veículos
+        self.table_veiculos = QTableWidget()
+        self.table_veiculos.setColumnCount(5)
+        self.table_veiculos.setHorizontalHeaderLabels(['ID', 'Placa', 'Modelo', 'Tipo', 'Status'])
+        self.table_veiculos.setColumnWidth(0, 50)
+        self.table_veiculos.setColumnWidth(1, 100)
+        self.table_veiculos.setColumnWidth(4, 100)
+        
+        # Botão de novo veículo
+        btn_novo = QPushButton('Novo Veículo')
+        btn_novo.setStyleSheet('background-color: #4CAF50; color: white;')
+        btn_novo.clicked.connect(self.show_vehicle_registration)
+
+        layout.addWidget(QLabel('Frota de Veículos Cadastrados:', self))
+        layout.addWidget(self.table_veiculos)
+        layout.addWidget(btn_novo)
+
         central_widget.setLayout(layout)
         self.setCentralWidget(central_widget)
 
     def novo_arquivo(self):
         QMessageBox.information(self, 'Novo Arquivo', 'Ação Novo Arquivo selecionada.')
 
-    def abrir_arquivo(self):
-        QMessageBox.information(self, 'Abrir Arquivo', 'Ação Abrir Arquivo selecionada.')
+    def add_example_vehicles(self):
+        self.veiculos = [
+            {'id': 1, 'placa': 'RNB4A21', 'modelo': 'Volvo FH 540', 'tipo': 'Caminhão', 'status': 'Ativo'},
+            {'id': 2, 'placa': 'RNM5C89', 'modelo': 'Mercedes-Benz OF-1721', 'tipo': 'Ônibus', 'status': 'Em Manutenção'},
+            {'id': 3, 'placa': 'RNE3F45', 'modelo': 'Honda CG 160 Titan', 'tipo': 'Moto', 'status': 'Ativo'}
+        ]
+        self.update_table()
 
-    def copiar_texto(self):
-        QMessageBox.information(self, 'Copiar', 'Ação Copiar selecionada.')
+    def update_table(self):
+        self.table_veiculos.setRowCount(len(self.veiculos))
+        for row, veiculo in enumerate(self.veiculos):
+            self.table_veiculos.setItem(row, 0, QTableWidgetItem(str(veiculo['id'])))
+            self.table_veiculos.setItem(row, 1, QTableWidgetItem(veiculo['placa']))
+            self.table_veiculos.setItem(row, 2, QTableWidgetItem(veiculo['modelo']))
+            self.table_veiculos.setItem(row, 3, QTableWidgetItem(veiculo['tipo']))
+            self.table_veiculos.setItem(row, 4, QTableWidgetItem(veiculo['status']))
 
-    def colar_texto(self):
-        QMessageBox.information(self, 'Colar', 'Ação Colar selecionada.')
-
-    def closeEvent(self, event):
-        reply = QMessageBox.question(self, 'Confirmação', 'Você realmente deseja fechar o sistema?', 
-                                     QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-        if reply == QMessageBox.Yes:
-            self.mostrar_tela_atualizacao()
-            event.ignore()
-        else:
-            event.ignore()
-
-    def mostrar_tela_atualizacao(self):
-        self.atualizacao_window = AtualizacaoWindow()
-        self.atualizacao_window.show()
-        self.atualizacao_window.iniciar_progresso()
+    def show_vehicle_registration(self):
+        dialog = VehicleDialog(self)
+        if dialog.exec_() == QDialog.Accepted:
+            novo_veiculo = {
+                'id': len(self.veiculos) + 1,
+                'placa': dialog.txt_placa.text(),
+                'modelo': dialog.txt_modelo.text(),
+                'tipo': dialog.cb_tipo.currentText(),
+                'status': 'Ativo'
+            }
+            self.veiculos.append(novo_veiculo)
+            self.update_table()
+            QMessageBox.information(self, 'Sucesso', 'Veículo cadastrado com sucesso!')
 
 class ForgotPasswordWindow(QWidget):
     def __init__(self):
